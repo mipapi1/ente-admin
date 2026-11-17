@@ -1,0 +1,49 @@
+# Expects a Secret `ente-admin` with keys `users` (name:hash lines) and `token`
+# (and optionally `fresh-token`). Create it yourself or with your secrets operator.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ente-admin
+spec:
+  replicas: 1
+  strategy: {type: Recreate}  # the state volume is ReadWriteOnce
+  selector:
+    matchLabels: {app: ente-admin}
+  template:
+    metadata:
+      labels: {app: ente-admin}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: ente-admin
+          image: ghcr.io/mipapi1/ente-admin:0.4.0
+          envFrom:
+            - configMapRef: {name: ente-admin-env}
+          ports:
+            - {name: http, containerPort: 8000}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 30
+          resources:
+            requests: {cpu: 10m, memory: 40Mi}
+            limits: {memory: 192Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: secrets, mountPath: /secrets, readOnly: true}
+            - {name: state, mountPath: /state}
+      volumes:
+        - name: secrets
+          secret: {secretName: ente-admin, defaultMode: 0440}
+        - name: state
+          persistentVolumeClaim: {claimName: ente-admin-state}

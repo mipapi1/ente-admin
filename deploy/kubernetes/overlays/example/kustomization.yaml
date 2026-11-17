@@ -1,0 +1,21 @@
+# Example: museum in namespace `ente`, a login proxy in front (header auth), TLS ingress.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ente-admin
+resources:
+  - ../../base
+  - ingress.yaml
+  - networkpolicy.yaml
+configMapGenerator:
+  - name: ente-admin-env
+    behavior: merge
+    literals:
+      - ENTE_ADMIN_PHOTOS_URL=http://museum.ente.svc.cluster.local:8080
+      # Behind a login proxy that sets Remote-User; only the ingress controller may send it
+      - ENTE_ADMIN_AUTH=header
+      - ENTE_ADMIN_TRUSTED_HEADER=Remote-User
+      # Your cluster's pod CIDR (10.42.0.0/16 is the k3s default)
+      - ENTE_ADMIN_TRUSTED_PROXIES=10.42.0.0/16
+images:
+  - name: ghcr.io/mipapi1/ente-admin
+    newTag: 0.4.0

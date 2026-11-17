@@ -1,0 +1,34 @@
+# ente-admin on its own, built from this folder. Quick try with synthetic data:
+#
+#   cp .env.example .env
+#   mkdir -p secrets && chmod 700 secrets
+#   printf 'admin:' > secrets/users
+#   docker compose run --rm ente-admin hash-password | tr -d '\r' >> secrets/users  # asks for a password
+#   docker compose up -d                                  # .env.example starts in demo mode
+#
+# Then open http://localhost:8001 and sign in as "admin". For a real server, follow
+# docs/SETUP.md. To run next to Ente's quickstart (same Docker network, museum reachable as
+# http://museum:8080), use deploy/compose/ente-admin.yaml instead.
+services:
+  ente-admin:
+    build:
+      context: .
+      args:
+        EXTRAS: postgres  # the postgres source (Locker, links, notifications); "" for a smaller image
+    image: ente-admin:local
+    env_file: .env
+    ports:
+      - 127.0.0.1:${ENTE_ADMIN_PUBLISH_PORT:-8001}:8000  # localhost only: put a reverse proxy with TLS in front
+    volumes:
+      - ./secrets:/secrets:ro  # users, tokens, passwords, museum's key.encryption: files, never env values
+      - state:/state  # caches, audit log, notification history
+      # - ./templates:/templates:ro          # ENTE_ADMIN_TEMPLATES_DIR=/templates
+      # - /path/to/museum.yaml:/museum.yaml:ro  # ENTE_ADMIN_<NAME>_MUSEUM_CONFIG_FILE=/museum.yaml
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+
+volumes:
+  state:

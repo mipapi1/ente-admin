@@ -1,0 +1,72 @@
+# Runner: label `buildkit`, shell steps only (no JavaScript actions), with buildctl and
+# BUILDKIT_HOST for a BuildKit daemon (e.g. a rootless BuildKit sidecar). Tests run in the
+# Dockerfile's `test` stage. A `v*` tag pushes <version> and <version>-pg; secrets:
+#   REGISTRY_IMAGE     e.g. registry.example.com/you/ente-admin
+#   REGISTRY_USERNAME, REGISTRY_PASSWORD   a token that can push packages
+# The end-to-end test (tests/e2e/run.sh) needs Docker and runs locally only.
+name: ci
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: buildkit
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          git clone -q "https://x-access-token:${TOKEN}@${GITHUB_SERVER_URL#https://}/${GITHUB_REPOSITORY}.git" src
+          git -C src checkout -q "${GITHUB_SHA}"
+      - name: ruff + pytest
+        # No --output: build the stage, keep nothing
+        run: buildctl build --frontend dockerfile.v0 --local context=src --local dockerfile=src --opt target=test
+      - name: Clean up
+        if: always()
+        run: rm -rf src
+
+  image:
+    needs: test
+    runs-on: buildkit
+    timeout-minutes: 20
+    env:
+      DOCKER_CONFIG: ${{ github.workspace }}/.docker
+    steps:
+      - name: Check out
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          git clone -q "https://x-access-token:${TOKEN}@${GITHUB_SERVER_URL#https://}/${GITHUB_REPOSITORY}.git" src
+          git -C src checkout -q "${GITHUB_SHA}"
+      - name: Log in
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          REGISTRY_IMAGE: ${{ secrets.REGISTRY_IMAGE }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          mkdir -p "$DOCKER_CONFIG" && chmod 700 "$DOCKER_CONFIG"
+          auth=$(printf '%s:%s' "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" | base64 | tr -d '\n')
+          printf '{"auths":{"%s":{"auth":"%s"}}}' "${REGISTRY_IMAGE%%/*}" "$auth" > "$DOCKER_CONFIG/config.json"
+      - name: Build (and push on a tag)
+        env:
+          IMAGE: ${{ secrets.REGISTRY_IMAGE || 'ente-admin' }}
+          PUSH: ${{ startsWith(github.ref, 'refs/tags/v') && 'true' || 'false' }}
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          [ "$PUSH" = true ] || version=ci
+          for extras in "" postgres; do
+            tag=$version${extras:+-pg}
+            buildctl build --frontend dockerfile.v0 --local context=src --local dockerfile=src \
+              --opt platform=linux/amd64 --opt build-arg:EXTRAS="$extras" \
+              --output "type=image,name=$IMAGE:$tag,push=$PUSH"
+            echo "built $IMAGE:$tag (push=$PUSH)"
+          done
+      - name: Clean up
+        if: always()
+        run: rm -rf src "$DOCKER_CONFIG"

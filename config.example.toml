@@ -1,0 +1,65 @@
+# ente-admin configuration file: ENTE_ADMIN_CONFIG=/path/config.toml. The same settings as
+# the environment variables (docs/CONFIG.md), in lower case; environment variables win.
+# Values below are the defaults unless marked "example". Secrets stay in files.
+
+host = "0.0.0.0"
+port = 8000
+state_dir = "/state"
+refresh_seconds = 300                # how long data is cached
+
+# login: basic | header | none (none: localhost only, with insecure_localhost = true)
+auth = "basic"
+trusted_header = "Remote-User"       # header auth
+trusted_proxies = []                 # header auth: required, e.g. ["172.16.0.0/12"]
+groups_header = "Remote-Groups"
+email_header = "Remote-Email"
+name_header = "Remote-Name"
+admin_groups = []                    # empty: every user is an admin
+sharing = false
+logout_url = ""
+
+[users]                              # example; better: ENTE_ADMIN_USERS_FILE
+admin = "pbkdf2_sha256$600000$example-salt$example-hash"
+
+# what to show
+# modules = ["overview", "ticker", "accounts", "devices", "activity", "locker", "notifications"]
+reveal_emails = false
+
+# admin portal (docs/ADMIN.md)
+enable_actions = false
+admin_idle_minutes = 15
+admin_max_minutes = 60
+kdf_max_mib = 512
+mail_from = ""
+
+# notifications (docs/NOTIFICATIONS.md)
+notify = "off"                       # off | shadow | send, for every instance
+notify_interval = 60
+templates_dir = ""
+
+[smtp]                               # example
+host = "smtp.example.com"
+port = "587"
+security = "starttls"                # starttls | ssl | none
+from = "noreply@example.com"
+from_name = "Photos"
+# username and password: ENTE_ADMIN_SMTP_USERNAME, ENTE_ADMIN_SMTP_PASSWORD_FILE
+
+[[instances]]                        # example: the museum source
+name = "photos"
+source = "museum"
+url = "http://museum:8080"
+token_file = "/secrets/token"
+
+[[instances]]                        # example: the postgres source, with everything optional
+name = "family"
+source = "postgres"
+dsn = "host=postgres dbname=ente_db user=ente_dashboard"
+password_file = "/secrets/db-password"
+email_key_file = "/secrets/email-key"
+api_url = "http://museum:8080"
+write_dsn = ""                       # optional write role, docs/POSTGRES.md
+write_password_file = ""
+museum_config_file = ""              # museum.yaml, read-only
+notify = "shadow"
+apps = { photos = "https://photos.example.com", locker = "https://locker.example.com", share = "https://share.example.com" }

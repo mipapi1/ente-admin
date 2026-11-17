@@ -1,0 +1,34 @@
+# Adds ente-admin to Ente's quickstart stack (the my-ente directory created by
+# https://ente.com/help/self-hosting/). From inside my-ente:
+#
+#   mkdir -p ente-admin/secrets && chmod 700 ente-admin/secrets
+#   ente account get-token --app photos --email admin@example.com > ente-admin/secrets/token
+#   docker run --rm -it ghcr.io/mipapi1/ente-admin hash-password      # -> ENTE_ADMIN_USERS
+#   docker compose -f compose.yaml -f ente-admin.yaml up -d ente-admin
+#
+# Then open http://localhost:8001 (published on localhost only; put it behind your
+# reverse proxy with TLS to reach it from elsewhere).
+services:
+  ente-admin:
+    image: ghcr.io/mipapi1/ente-admin:0.4.0
+    depends_on: [museum]
+    ports:
+      - 127.0.0.1:8001:8000
+    environment:
+      ENTE_ADMIN_USERS_FILE: /secrets/users
+      ENTE_ADMIN_INSTANCES: photos
+      ENTE_ADMIN_PHOTOS_SOURCE: museum
+      ENTE_ADMIN_PHOTOS_URL: http://museum:8080
+      ENTE_ADMIN_PHOTOS_TOKEN_FILE: /secrets/token
+      # Optional: a token less than 10 minutes old refreshes the account list
+      ENTE_ADMIN_PHOTOS_FRESH_TOKEN_FILE: /secrets/fresh-token
+    volumes:
+      - ./ente-admin/secrets:/secrets:ro
+      - ente-admin-state:/state
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+
+volumes:
+  ente-admin-state:

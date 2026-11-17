@@ -1,0 +1,16 @@
+# With header auth, only the ingress controller may reach the pod; otherwise anything
+# in the cluster could send the trusted header.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ente-admin-ingress
+spec:
+  podSelector:
+    matchLabels: {app: ente-admin}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {app.kubernetes.io/name: traefik}

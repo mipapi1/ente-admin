@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ente-admin"
+version = "0.4.0"
+description = "Admin dashboard and portal for self-hosted Ente servers"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = ["pynacl==1.6.2"]
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]==3.3.6"]
+dev = ["pytest==8.4.2", "ruff==0.14.0"]
+
+[project.scripts]
+ente-admin = "ente_admin.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"ente_admin.ui" = ["*.html", "*.css", "*.js", "*.svg"]
+
+[tool.ruff]
+extend-exclude = ["legacy"]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "BLE"]
+ignore = ["S101", "S310"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S104", "S105", "S106", "S107"]
+"src/ente_admin/notify/templates.py" = ["E501"]  # email HTML
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

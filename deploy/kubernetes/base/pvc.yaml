@@ -1,0 +1,9 @@
+# Holds the account-id cache and the label salt (a few KB)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ente-admin-state
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: {storage: 64Mi}

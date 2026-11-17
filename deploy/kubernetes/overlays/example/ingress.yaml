@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ente-admin
+  annotations: {}  # add your login proxy here (e.g. a forward-auth middleware)
+spec:
+  rules:
+    - host: ente-admin.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: ente-admin, port: {name: http}}
+  tls:
+    - hosts: [ente-admin.example.com]

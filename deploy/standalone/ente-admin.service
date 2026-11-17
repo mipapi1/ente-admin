@@ -1,0 +1,21 @@
+[Unit]
+Description=ente-admin dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=ente-admin
+EnvironmentFile=/etc/ente-admin/env
+ExecStart=/opt/ente-admin/bin/ente-admin serve
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/ente-admin
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallFilter=@system-service
+
+[Install]
+WantedBy=multi-user.target

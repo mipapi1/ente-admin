@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs: {app.kubernetes.io/name: ente-admin}
+    includeSelectors: false
+resources:
+  - deployment.yaml
+  - service.yaml
+  - pvc.yaml
+configMapGenerator:
+  - name: ente-admin-env
+    literals:
+      - ENTE_ADMIN_INSTANCES=photos
+      - ENTE_ADMIN_PHOTOS_SOURCE=museum
+      - ENTE_ADMIN_PHOTOS_URL=http://museum:8080
+      - ENTE_ADMIN_PHOTOS_TOKEN_FILE=/secrets/token
+      - ENTE_ADMIN_USERS_FILE=/secrets/users
