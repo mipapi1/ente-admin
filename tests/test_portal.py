@@ -67,6 +67,14 @@ def audit(url):
     return json.loads(get(url + "/api/admin/audit", headers=HDRS)[2])["entries"]
 
 
+def wait_for(cond, timeout=5.0):
+    """Poll until cond() is true; background work (sign-out) can be slow on CI runners."""
+    end = time.monotonic() + timeout
+    while not cond():
+        assert time.monotonic() < end, "timed out"
+        time.sleep(0.02)
+
+
 # ---- unlock / lock ----
 def test_unlock_and_lock(portal):
     url, museum, _ = portal
@@ -77,7 +85,7 @@ def test_unlock_and_lock(portal):
     tokens = set(museum.tokens)
     assert post(url, "/api/admin/lock", {"instance": "photos"})[0] == 200
     assert status(url)["unlocked"] is False
-    time.sleep(0.2)  # sign-out runs in the background
+    wait_for(lambda: museum.logged_out)  # sign-out runs in the background
     assert len(museum.logged_out) == 1 and museum.logged_out[0] in tokens
     assert [e["action"] for e in audit(url)][:3] == ["lock", "unlock", "unlock-code-sent"]
 
@@ -135,11 +143,10 @@ def test_idle_session_locks_and_signs_out(portal):
     url, museum, dash = portal
     unlock(url)
     dash.portal.sessions.idle_s = 0.05
-    time.sleep(0.1)
-    assert status(url)["unlocked"] is False
+    wait_for(lambda: status(url)["unlocked"] is False)
     code, out = run(url, "email-mfa", BOB, {"enabled": True})
     assert code == 401 and "locked" in out["error"]
-    time.sleep(0.2)
+    wait_for(lambda: museum.logged_out)
     assert len(museum.logged_out) == 1
 
 
@@ -239,7 +246,9 @@ def test_bonus_add_update_remove(portal):
     url, museum, _ = portal
     unlock(url)
     assert run(url, "set-bonus", BOB, {"storage_gb": 100, "years": 5})[0] == 200
-    assert museum.calls[-2][2]["action"] == "ADD"
+    # find the call by path: background refreshes can land between it and the end of the list
+    bonus_calls = [b for _, p, b in museum.calls if p == "/admin/user/bonus"]
+    assert bonus_calls[-1]["action"] == "ADD"
     _, prev = run(url, "set-bonus", BOB, {"storage_gb": 200, "years": 5}, preview=True)
     assert prev["changes"][0]["before"].startswith("100 GB")
     assert run(url, "set-bonus", BOB, {"storage_gb": 200, "years": 5})[0] == 200
