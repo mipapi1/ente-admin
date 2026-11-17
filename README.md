@@ -1,5 +1,17 @@
 # ente-admin
 
+Hello! I run [Ente Photos](https://ente.com) at home on my k3s cluster. The platform is set up by
+[ansible-k3s-homelab](https://github.com/mipapi1/ansible-k3s-homelab), and the apps live in
+[k3s-homelab-apps](https://github.com/mipapi1/k3s-homelab-apps). Recently I started letting family
+and friends keep their photos and videos on my Ente servers, where they stay end-to-end encrypted.
+
+Running Ente for other people means doing the admin side too, and self-hosted Ente has no easy,
+friendly way to do that. Each small request meant digging through CLI commands, API calls and SQL.
+So I built ente-admin: one page where I can see how everyone's doing and take care of their
+accounts.
+
+---
+
 An admin dashboard for self-hosted [Ente](https://ente.com) servers. It covers accounts,
 storage, devices and upload activity, Ente Locker, public links, and the emails self-hosted
 Ente doesn't send. An optional admin portal handles the account changes you would
@@ -39,13 +51,15 @@ written to the audit log, and the dashboard never gets more access than you give
 | **Audit log** | who did what, when, on which account, with the values before and after |
 | **Everywhere** | light and dark, phones, keyboard (`/` search, `t` theme), your own branding, viewers who see only their own account |
 
-| Locker | Notifications |
+| Accounts | Notifications |
 |---|---|
-| ![Locker](docs/images/locker.png) | ![Notifications](docs/images/notifications.png) |
-| **Server** | **Phone, dark** |
-| ![Server](docs/images/server.png) | ![Overview on a phone](docs/images/overview-mobile-dark.png) |
+| ![Accounts](docs/images/accounts.png) | ![Notifications](docs/images/notifications.png) |
+| **Locker** | **Server** |
+| ![Locker](docs/images/locker.png) | ![Server](docs/images/server.png) |
+| **Phone, dark** | |
+| ![Overview on a phone](docs/images/overview-mobile-dark.png) | |
 
-*Screenshots: a test server with test accounts only.*
+*Screenshots: a throwaway test server filled with made-up accounts and data.*
 
 ## Quick start
 
