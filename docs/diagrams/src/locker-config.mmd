@@ -1,0 +1,17 @@
+flowchart LR
+  subgraph cfg["museum.yaml change"]
+    form[Change form<br/>in the portal] --> diff[Snippet + diff,<br/>secrets redacted] --> you[You apply it,<br/>restart museum] --> verify[Verify: museum,<br/>apps, values] --> audit[(Audit log)]
+  end
+  subgraph locker["Locker, links, trusted contacts"]
+    db[(museum DB)] -->|collections app=locker,<br/>files, object_keys| usage[Items and size vs. limits<br/>100 / 1 GB · 1,000 / 10 GB]
+    db -->|public_*_tokens| links[Share links] -->|write role + unlock<br/>+ typed 'revoke'| revoke[is_disabled = true]
+    db -->|emergency_contact, legacy_kit| legacy[Trusted contacts]
+  end
+
+  class db data
+  class usage,links,legacy,form,diff,verify app
+  class revoke auth
+  class you muted
+  class audit log
+  class locker z-data
+  class cfg z-gate

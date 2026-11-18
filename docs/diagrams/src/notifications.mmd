@@ -1,0 +1,19 @@
+flowchart TD
+  tick([Every minute]) --> mode{mode}
+  mode -->|off| stop[nothing]
+  mode -->|shadow / send| read[Read activity, shares,<br/>new photos in shared albums]
+  read --> rules[Reminders at 15 / 30 days, once per absence;<br/>new shares; one new-photo email<br/>per album per day]
+  rules --> sup{suppressed?}
+  sup -->|yes| logS[(history: suppressed)]
+  sup -->|no| win{reminder within<br/>send hours?}
+  win -->|no| wait[wait for the window]
+  win -->|yes| tpl[template: portal edit → folder → built-in]
+  tpl --> how{mode}
+  how -->|shadow| logH[(history: shadow)]
+  how -->|send| smtp[SMTP] --> logR[(history: sent,<br/>or failed and retried)]
+
+  class tick,stop,wait muted
+  class mode,sup,win,how gate
+  class read,rules,tpl app
+  class smtp mail
+  class logS,logH,logR log

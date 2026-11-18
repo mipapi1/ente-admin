@@ -1,0 +1,29 @@
+flowchart LR
+  browser[Browser] -->|HTTPS| proxy[Reverse proxy<br/>optional login proxy]
+  proxy -->|HTTP + Remote-User| admin[ente-admin]
+  subgraph dash["ente-admin"]
+    admin --- state[(state volume<br/>audit.db, notify.db)]
+  end
+  subgraph ente["Your Ente server"]
+    museum[museum]
+    db[(museum's Postgres)]
+    s3[(Object storage)]
+    yaml[museum.yaml]
+    apps[Ente web apps]
+  end
+  admin -->|admin API, token| museum
+  admin -->|read-only role<br/>+ optional write role,<br/>two flags| db
+  admin -.->|read-only, optional| yaml
+  admin -->|HTTP GET| apps
+  admin -->|SMTP| smtp[Mail server]
+  museum --> db
+  museum --> s3
+
+  class browser muted
+  class proxy auth
+  class admin,museum,apps app
+  class state log
+  class db,s3,yaml data
+  class smtp mail
+  class dash z-app
+  class ente z-data

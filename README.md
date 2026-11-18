@@ -91,20 +91,12 @@ Other ways to run it:
 
 ## How it works
 
-```mermaid
-flowchart LR
-  browser[Browser] -->|HTTPS| proxy[Reverse proxy<br/>optional login proxy]
-  proxy -->|HTTP + Remote-User| admin[ente-admin]
-  admin -->|admin API, token| museum[museum]
-  admin -->|read-only role| db[(museum's Postgres)]
-  admin -.->|optional write role:<br/>two flags| db
-  admin -->|SMTP| smtp[Mail server]
-  admin -->|HTTP GET| apps[Ente web apps]
-  admin --- state[(state volume<br/>audit.db, notify.db)]
-  museum --> db
-  museum --> s3[(Object storage)]
-  admin -.->|read-only, optional| yaml[museum.yaml]
-```
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/architecture.dark.svg">
+  <img alt="How it works: browser to reverse proxy to ente-admin, which talks to museum, its Postgres, museum.yaml, the web apps and a mail server" src="docs/diagrams/architecture.light.svg">
+</picture>
+</p>
 
 ### Data flow
 
@@ -122,53 +114,30 @@ network except your mail server.
 
 ### Sign-in and permissions
 
-```mermaid
-sequenceDiagram
-  actor A as Admin
-  participant P as Login proxy / Basic auth
-  participant D as ente-admin
-  participant M as museum
-  A->>P: sign in (2FA at the proxy)
-  P->>D: request + Remote-User, Remote-Groups
-  D->>D: trusted proxy? admin group? → admin or viewer
-  Note over D: reads: admins see all,<br/>viewers only their own account
-  A->>D: Unlock server (Ente admin email)
-  D->>M: send login code
-  A->>D: code + Ente password (+ TOTP)
-  D->>M: verify, open the token with the password (argon2id)
-  Note over D: token in memory only,<br/>locks after 15 min idle / 60 min
-  A->>D: action → preview → typed confirmation
-  D->>M: admin API call
-  D->>D: audit log (before / after)
-```
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/sign-in.dark.svg">
+  <img alt="Sign-in and permissions: login proxy sets the role, unlocking with the Ente admin account, typed confirmation, audit log" src="docs/diagrams/sign-in.light.svg">
+</picture>
+</p>
 
 ### Notifications
 
-```mermaid
-flowchart TD
-  tick[Every minute] --> mode{mode}
-  mode -->|off| stop[nothing]
-  mode -->|shadow / send| read[Read activity, shares,<br/>new photos in shared albums]
-  read --> rules[15/30 days once per absence,<br/>new shares, one new-photo email<br/>per album per day]
-  rules --> sup{suppressed?}
-  sup -->|yes| logS[history: suppressed]
-  sup -->|no| win{reminder within<br/>send hours?}
-  win -->|no| wait[wait for the window]
-  win -->|yes| tpl[template: portal edit → folder → built-in]
-  tpl --> how{mode}
-  how -->|shadow| logH[history: shadow]
-  how -->|send| smtp[SMTP] --> logR[history: sent, or failed and retried]
-```
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/notifications.dark.svg">
+  <img alt="Notifications: every minute, mode, rules, suppression, send hours, template, then shadow history or SMTP" src="docs/diagrams/notifications.light.svg">
+</picture>
+</p>
 
 ### Locker and museum.yaml
 
-```mermaid
-flowchart LR
-  db[(museum DB)] -->|collections app=locker,<br/>files, object_keys| usage[Items and size vs. limits<br/>100 / 1 GB · 1,000 / 10 GB]
-  db -->|public_*_tokens| links[Share links] -->|write role + unlock<br/>+ typed 'revoke'| revoke[is_disabled = true]
-  db -->|emergency_contact, legacy_kit| legacy[Trusted contacts]
-  form[museum.yaml change…] --> diff[Snippet + diff,<br/>secrets redacted] --> you[You apply it,<br/>restart museum] --> verify[Verify: museum,<br/>apps, values] --> audit[(Audit log)]
-```
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/locker-config.dark.svg">
+  <img alt="Locker usage, share links and trusted contacts read from the museum DB, and the museum.yaml change flow" src="docs/diagrams/locker-config.light.svg">
+</picture>
+</p>
 
 ## What it can do
 

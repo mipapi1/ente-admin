@@ -1,0 +1,17 @@
+flowchart TD
+  you([Admin]) -->|sign in, 2FA at the proxy| proxy[Login proxy / Basic auth]
+  proxy -->|request + Remote-User, Remote-Groups| role{trusted proxy?<br/>admin group?}
+  role -->|no| viewer[Viewer<br/>reads only their own account]
+  role -->|yes| admin[Admin<br/>reads every account]
+  admin -->|Unlock server<br/>with the Ente admin email| code[museum sends a login code]
+  code --> pw[code + Ente password + TOTP<br/>token opened with argon2id]
+  pw --> mem[Unlocked: token in memory,<br/>locks after 15 min idle<br/>or 60 min]
+  mem --> act[Action: preview,<br/>then typed confirmation]
+  act -->|confirmed| api[museum admin API call]
+  api --> audit[(Audit log<br/>before / after)]
+
+  class you muted
+  class proxy,pw,mem auth
+  class role,act gate
+  class viewer,admin,code,api app
+  class audit log
